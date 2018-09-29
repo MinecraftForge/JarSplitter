@@ -82,11 +82,11 @@ public class ConsoleTool {
                 }
             }
 
-            if (slim.exists() && !slim.delete()) throw new IOException("Could not delete file: " + slim);
-            if (data.exists() && !data.delete()) throw new IOException("Could not delete file: " + data);
+            checkOutput(slim);
+            checkOutput(data);
             if (extra != null) {
                 if (whitelist.isEmpty()) throw new IllegalArgumentException("--extra argument specified with no --srg class list");
-                if (extra.exists() && !extra.delete()) throw new IOException("Could not delete file: " + extra);
+                checkOutput(extra);
             }
 
             log("Splitting: ");
@@ -128,6 +128,13 @@ public class ConsoleTool {
         int read = -1;
         while ((read = input.read(BUFFER)) != -1)
             output.write(BUFFER, 0, read);
+    }
+
+    private static void checkOutput(File file) throws IOException {
+        if (file == null) return;
+        if (file.exists() && !file.delete()) throw new IOException("Could not delete file: " + file);
+        File parent = file.getParentFile();
+        if (!parent.exists() && !parent.mkdirs()) throw new IOException("Could not make prent folders: " + parent);
     }
 
     public static void log(String message) {
