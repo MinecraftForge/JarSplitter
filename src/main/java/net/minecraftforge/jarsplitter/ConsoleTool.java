@@ -24,8 +24,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -63,10 +67,11 @@ public class ConsoleTool {
             File extra = options.has(extraO) ? options.valueOf(extraO) : null;
 
             log("Splitter: ");
-            log("  Input: " + input);
-            log("  Slim:  " + slim);
-            log("  Data:  " + data);
-            log("  Extra: " + extra);
+            log("  Input:    " + input);
+            log("  Input:    " + input);
+            log("  Slim:     " + slim);
+            log("  Data:     " + data);
+            log("  Extra:    " + extra);
 
             Set<String> whitelist = new HashSet<>();
 
@@ -82,17 +87,27 @@ public class ConsoleTool {
                 }
             }
 
-            checkOutput(slim);
-            checkOutput(data);
+            String inputSha = sha1(input, true);
+            String srgSha = sha1(whitelist);
+            log("  InputSha: " + inputSha);
+            log("  SrgSha:   " + srgSha);
+
+            slim = checkOutput("Slim", slim, inputSha, srgSha);
+            data = checkOutput("Data", data, inputSha, srgSha);
             if (extra != null) {
                 if (whitelist.isEmpty()) throw new IllegalArgumentException("--extra argument specified with no --srg class list");
-                checkOutput(extra);
+                extra = checkOutput("Extra", extra, inputSha, srgSha);
+            }
+
+            if (slim == null && data == null && extra == null) {
+                log("All files up to date");
+                return;
             }
 
             log("Splitting: ");
             try (ZipInputStream zinput = new ZipInputStream(new FileInputStream(input));
-                 ZipOutputStream zslim = new ZipOutputStream(new FileOutputStream(slim));
-                 ZipOutputStream zdata = new ZipOutputStream(new FileOutputStream(data));
+                 ZipOutputStream zslim = new ZipOutputStream(slim == null ? NULL_OUTPUT : new FileOutputStream(slim));
+                 ZipOutputStream zdata = new ZipOutputStream(data == null ? NULL_OUTPUT : new FileOutputStream(data));
                  ZipOutputStream zextra = new ZipOutputStream(extra == null ? NULL_OUTPUT : new FileOutputStream(extra))) {
 
                ZipEntry entry;
@@ -101,18 +116,27 @@ public class ConsoleTool {
                        String key = entry.getName().substring(0, entry.getName().length() - 6); //String .class
 
                        if (whitelist.isEmpty() || whitelist.contains(key)) {
-                           log("  Slim  " + entry.getName());
-                           copy(entry, zinput, zslim);
+                           if (slim != null) {
+                               log("  Slim  " + entry.getName());
+                               copy(entry, zinput, zslim);
+                           }
                        } else {
-                           log("  Extra " + entry.getName());
-                           copy(entry, zinput, zextra);
+                           if (extra != null) {
+                               log("  Extra " + entry.getName());
+                               copy(entry, zinput, zextra);
+                           }
                        }
                    } else {
-                       log("  Data  " + entry.getName());
-                       copy(entry, zinput, zdata);
+                       if (data != null) {
+                           log("  Data  " + entry.getName());
+                           copy(entry, zinput, zdata);
+                       }
                    }
                }
             }
+            writeCache(slim, inputSha, srgSha);
+            writeCache(data, inputSha, srgSha);
+            writeCache(extra, inputSha, srgSha);
         } catch (OptionException e) {
             parser.printHelpOn(System.out);
             e.printStackTrace();
@@ -130,14 +154,74 @@ public class ConsoleTool {
             output.write(BUFFER, 0, read);
     }
 
-    private static void checkOutput(File file) throws IOException {
+    private static void writeCache(File file, String inputSha, String srgSha) throws IOException {
         if (file == null) return;
+
+        File cacheFile = new File(file.getAbsolutePath() + ".cache");
+        byte[] cache = ("Input: " + inputSha + "\n" +
+                        "Srg: " + srgSha + "\n" +
+                        "Output: " + sha1(file, false)).getBytes();
+        Files.write(cacheFile.toPath(), cache);
+    }
+    private static File checkOutput(String name, File file, String inputSha, String srgSha) throws IOException {
+        if (file == null) return null;
+
+        File cacheFile = new File(file.getAbsolutePath() + ".cache");
+        if (cacheFile.exists()) {
+            byte[] data = Files.readAllBytes(cacheFile.toPath());
+            byte[] cache = ("Input: " + inputSha + "\n" +
+                            "Srg: " + srgSha + "\n" +
+                            "Output: " + sha1(file, false)).getBytes(); // Reading from disc is less costly/destructivethen writing. So we can verify the output hasnt changed.
+            if (Arrays.equals(cache, data) && file.exists()) {
+                log("  " + name + " Cache Hit");
+                return null;
+            }
+            log("  " + name + " Cache Miss");
+            if (!cacheFile.delete()) throw new IOException("Could not delete file: " + cacheFile);
+        }
+
         if (file.exists() && !file.delete()) throw new IOException("Could not delete file: " + file);
         File parent = file.getParentFile();
         if (!parent.exists() && !parent.mkdirs()) throw new IOException("Could not make prent folders: " + parent);
+        return file;
     }
 
     public static void log(String message) {
         System.out.println(message);
+    }
+
+    private static String sha1(Set<String> data) throws IOException {
+        if (data.isEmpty())
+            return "empty";
+
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            data.stream().sorted().forEach(e -> digest.update(e.getBytes()));
+            return new BigInteger(1, digest.digest()).toString(16);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static String sha1(File path, boolean allowCache) throws IOException {
+        if (!path.exists())
+            return "missing";
+
+        File shaFile = new File(path.getAbsolutePath() + ".sha");
+        if (allowCache && shaFile.exists()) {
+            return Files.lines(shaFile.toPath()).findFirst().orElse("");
+        }
+
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            try(InputStream input = new FileInputStream(path)) {
+                int read = -1;
+                while ((read = input.read(BUFFER)) != -1)
+                    digest.update(BUFFER, 0, read);
+                return new BigInteger(1, digest.digest()).toString(16);
+            }
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
