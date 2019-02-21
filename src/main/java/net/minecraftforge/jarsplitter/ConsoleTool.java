@@ -54,7 +54,7 @@ public class ConsoleTool {
         // Shared arguments
         OptionSpec<File> inputO = parser.accepts("input").withRequiredArg().ofType(File.class).required();
         OptionSpec<File> slimO = parser.accepts("slim").withRequiredArg().ofType(File.class).required();
-        OptionSpec<File> dataO = parser.accepts("data").withRequiredArg().ofType(File.class).required();
+        OptionSpec<File> dataO = parser.accepts("data").withRequiredArg().ofType(File.class);
         OptionSpec<File> extraO = parser.accepts("extra").withRequiredArg().ofType(File.class);
         OptionSpec<File> srgO = parser.accepts("srg").withRequiredArg().ofType(File.class);
 
@@ -63,8 +63,9 @@ public class ConsoleTool {
 
             File input = options.valueOf(inputO);
             File slim  = options.valueOf(slimO);
-            File data  = options.valueOf(dataO);
+            File data  = options.has(dataO) ? options.valueOf(dataO) : null;
             File extra = options.has(extraO) ? options.valueOf(extraO) : null;
+            boolean merge = data == null;
 
             log("Splitter: ");
             log("  Input:    " + input);
@@ -72,6 +73,8 @@ public class ConsoleTool {
             log("  Slim:     " + slim);
             log("  Data:     " + data);
             log("  Extra:    " + extra);
+            if (merge)
+                log("  Including data in extra");
 
             Set<String> whitelist = new HashSet<>();
 
@@ -96,7 +99,9 @@ public class ConsoleTool {
             data = checkOutput("Data", data, inputSha, srgSha);
             if (extra != null) {
                 if (whitelist.isEmpty()) throw new IllegalArgumentException("--extra argument specified with no --srg class list");
-                extra = checkOutput("Extra", extra, inputSha, srgSha);
+                extra = checkOutput("Extra", extra, inputSha, srgSha, merge ? "\nMerge: true" : null);
+            } else if (merge) {
+                throw new IllegalArgumentException("You must specify --extra if you do not specify --data");
             }
 
             if (slim == null && data == null && extra == null) {
@@ -116,21 +121,15 @@ public class ConsoleTool {
                        String key = entry.getName().substring(0, entry.getName().length() - 6); //String .class
 
                        if (whitelist.isEmpty() || whitelist.contains(key)) {
-                           if (slim != null) {
-                               log("  Slim  " + entry.getName());
-                               copy(entry, zinput, zslim);
-                           }
+                           log("  Slim  " + entry.getName());
+                           copy(entry, zinput, zslim);
                        } else {
-                           if (extra != null) {
-                               log("  Extra " + entry.getName());
-                               copy(entry, zinput, zextra);
-                           }
+                           log("  Extra " + entry.getName());
+                           copy(entry, zinput, zextra);
                        }
                    } else {
-                       if (data != null) {
-                           log("  Data  " + entry.getName());
-                           copy(entry, zinput, zdata);
-                       }
+                       log("  Data  " + entry.getName());
+                       copy(entry, zinput, merge ? zextra : zdata);
                    }
                }
             }
@@ -163,7 +162,12 @@ public class ConsoleTool {
                         "Output: " + sha1(file, false)).getBytes();
         Files.write(cacheFile.toPath(), cache);
     }
+
     private static File checkOutput(String name, File file, String inputSha, String srgSha) throws IOException {
+        return checkOutput(name, file, inputSha, srgSha, null);
+    }
+
+    private static File checkOutput(String name, File file, String inputSha, String srgSha, String extra) throws IOException {
         if (file == null) return null;
 
         File cacheFile = new File(file.getAbsolutePath() + ".cache");
@@ -171,7 +175,9 @@ public class ConsoleTool {
             byte[] data = Files.readAllBytes(cacheFile.toPath());
             byte[] cache = ("Input: " + inputSha + "\n" +
                             "Srg: " + srgSha + "\n" +
-                            "Output: " + sha1(file, false)).getBytes(); // Reading from disc is less costly/destructivethen writing. So we can verify the output hasnt changed.
+                            "Output: " + sha1(file, false) +
+                            (extra == null ? "" : extra)).getBytes(); // Reading from disc is less costly/destructivethen writing. So we can verify the output hasnt changed.
+
             if (Arrays.equals(cache, data) && file.exists()) {
                 log("  " + name + " Cache Hit");
                 return null;
