@@ -145,7 +145,7 @@ public class ConsoleTool {
     private static byte[] BUFFER = new byte[1024];
     private static void copy(ZipEntry entry, InputStream input, ZipOutputStream output) throws IOException {
         ZipEntry _new = new ZipEntry(entry.getName());
-        _new.setTime(0);
+        _new.setTime(0x92D6688800L); //Java8 screws up on 0 time, so use another static time.
         output.putNextEntry(_new);
 
         int read = -1;
