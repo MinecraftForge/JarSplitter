@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -50,6 +51,7 @@ public class ConsoleTool {
     };
 
     public static void main(String[] args) throws IOException {
+        TimeZone.setDefault(TimeZone.getTimeZone("GMT")); //Fix Java stupidity that causes timestamps in zips to depend on user's timezone!
         OptionParser parser = new OptionParser();
         // Shared arguments
         OptionSpec<File> inputO = parser.accepts("input").withRequiredArg().ofType(File.class).required();
@@ -145,7 +147,7 @@ public class ConsoleTool {
     private static byte[] BUFFER = new byte[1024];
     private static void copy(ZipEntry entry, InputStream input, ZipOutputStream output) throws IOException {
         ZipEntry _new = new ZipEntry(entry.getName());
-        _new.setTime(0x92D6688800L); //Java8 screws up on 0 time, so use another static time.
+        _new.setTime(628041600000L); //Java8 screws up on 0 time, so use another static time.
         output.putNextEntry(_new);
 
         int read = -1;
