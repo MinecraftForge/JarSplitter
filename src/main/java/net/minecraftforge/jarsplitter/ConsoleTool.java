@@ -43,7 +43,7 @@ import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
-import joptsimple.internal.Strings;
+import net.minecraftforge.srgutils.IMappingFile;
 
 public class ConsoleTool {
     private static OutputStream NULL_OUTPUT = new OutputStream() {
@@ -71,7 +71,6 @@ public class ConsoleTool {
 
             log("Splitter: ");
             log("  Input:    " + input);
-            log("  Input:    " + input);
             log("  Slim:     " + slim);
             log("  Data:     " + data);
             log("  Extra:    " + extra);
@@ -83,12 +82,8 @@ public class ConsoleTool {
             if (options.has(srgO)) {
                 for(File dir : options.valuesOf(srgO)) {
                     log("  SRG:   " + dir);
-                    List<String> lines = Files.lines(Paths.get(dir.getAbsolutePath())).map(line -> line.split("#")[0]).filter(l -> !Strings.isNullOrEmpty(l.trim())).collect(Collectors.toList()); //Strip comments and empty lines
-                    lines.stream()
-                    .filter(line -> !line.startsWith("\t") || (line.indexOf(':') != -1 && line.startsWith("CL:"))) // Class lines only
-                    .map(line -> line.indexOf(':') != -1 ? line.substring(4).split(" ") : line.split(" ")) //Convert to: OBF SRG
-                    .filter(pts -> pts.length == 2 && !pts[0].endsWith("/")) //Skip packages
-                    .forEach(pts -> whitelist.add(pts[0]));
+                    IMappingFile srg = IMappingFile.load(dir);
+                    srg.getClasses().forEach(c -> whitelist.add(c.getOriginal()));
                 }
             }
 
