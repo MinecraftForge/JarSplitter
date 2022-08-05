@@ -111,6 +111,9 @@ public class ConsoleTool {
                  ZipOutputStream zslim = new ZipOutputStream(slim == null ? NULL_OUTPUT : new FileOutputStream(slim));
                  ZipOutputStream zdata = new ZipOutputStream(data == null ? NULL_OUTPUT : new FileOutputStream(data));
                  ZipOutputStream zextra = new ZipOutputStream(extra == null ? NULL_OUTPUT : new FileOutputStream(extra))) {
+                zslim.setLevel(6);
+                zdata.setLevel(6);
+                zextra.setLevel(6);
 
                ZipEntry entry;
                while ((entry = zinput.getNextEntry()) != null) {
