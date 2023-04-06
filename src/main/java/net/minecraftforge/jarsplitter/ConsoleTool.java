@@ -1,20 +1,6 @@
 /*
- * JarSplitter
- * Copyright (c) 2016-2018.
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation version 2.1
- * of the License.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * Copyright (c) Forge Development LLC and contributors
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 package net.minecraftforge.jarsplitter;
 
@@ -167,13 +153,14 @@ public class ConsoleTool {
     private static File checkOutput(String name, File file, String inputSha, String srgSha, String extra) throws IOException {
         if (file == null) return null;
 
+        file = file.getCanonicalFile();
         File cacheFile = new File(file.getAbsolutePath() + ".cache");
         if (cacheFile.exists()) {
             byte[] data = Files.readAllBytes(cacheFile.toPath());
             byte[] cache = ("Input: " + inputSha + "\n" +
                             "Srg: " + srgSha + "\n" +
                             "Output: " + sha1(file, false) +
-                            (extra == null ? "" : extra)).getBytes(); // Reading from disc is less costly/destructivethen writing. So we can verify the output hasnt changed.
+                            (extra == null ? "" : extra)).getBytes(); // Reading from disc is less costly/destructive then writing. So we can verify the output hasn't changed.
 
             if (Arrays.equals(cache, data) && file.exists()) {
                 log("  " + name + " Cache Hit");

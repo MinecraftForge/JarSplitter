@@ -1,1 +1,9 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenLocal()
+        maven { url = 'https://maven.minecraftforge.net/' }
+    }
+}
+
 rootProject.name = 'jarsplitter'
