@@ -57,15 +57,12 @@ tasks.named('shadowJar', ShadowJar).configure {
 }
 
 artifacts {
-    archives jar
     archives shadowJar
-    archives sourcesJar
 }
 
 publishing {
     publications.register('mavenJava', MavenPublication) {
         from components.java
-        artifact shadowJar
 
         artifactId = 'jarsplitter'
 
