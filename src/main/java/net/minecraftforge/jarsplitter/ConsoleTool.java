@@ -12,15 +12,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -32,7 +29,7 @@ import joptsimple.OptionSpec;
 import net.minecraftforge.srgutils.IMappingFile;
 
 public class ConsoleTool {
-    private static OutputStream NULL_OUTPUT = new OutputStream() {
+    private static final OutputStream NULL_OUTPUT = new OutputStream() {
         @Override public void write(int b) throws IOException {}
     };
 

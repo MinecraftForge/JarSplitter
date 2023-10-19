@@ -2,8 +2,15 @@ pluginManagement {
     repositories {
         gradlePluginPortal()
         mavenLocal()
-        maven { url = 'https://maven.minecraftforge.net/' }
+        maven {
+            name = 'MinecraftForge'
+            url = 'https://maven.minecraftforge.net/'
+        }
     }
 }
 
-rootProject.name = 'jarsplitter'
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.7.0'
+}
+
+rootProject.name = 'JarSplitter'
