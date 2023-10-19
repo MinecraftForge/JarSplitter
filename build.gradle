@@ -67,6 +67,8 @@ publishing {
         from components.java
         artifact shadowJar
 
+        artifactId = 'jarsplitter'
+
         pom {
             name = 'Jar Splitter'
             description = 'Splits a jar file into classes and data, used in the Forge installer'
