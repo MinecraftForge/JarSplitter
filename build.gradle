@@ -1,3 +1,6 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import net.minecraftforge.gradleutils.PomUtils
+
 plugins {
   id 'java'
   id 'eclipse'
@@ -12,33 +15,44 @@ version = gradleutils.getTagOffsetVersion()
 println "Version: $version"
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(8)
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
     withSourcesJar()
 }
 
 repositories {
     mavenCentral()
-    maven { url = 'https://maven.minecraftforge.net/' }
+    maven gradleutils.forgeMaven
+}
+
+dependencies {
+    implementation 'net.sf.jopt-simple:jopt-simple:5.0.4'
+    implementation 'net.minecraftforge:srgutils:0.4.3'
 }
 
 license {
-    header project.file('LICENSE-header.txt')
-    include 'net/minecraftforge/jarsplitter/**/*.java'
-    newLine false
+    header = file('LICENSE-header.txt')
+    newLine = false
+    exclude '**/*.properties'
 }
 
 tasks.named('jar', Jar).configure {
     manifest {
-        attributes('Main-Class': 'net.minecraftforge.jarsplitter.ConsoleTool')
-        attributes('Implementation-Version': project.version)
+        attributes([
+            'Main-Class': 'net.minecraftforge.jarsplitter.ConsoleTool',
+            'Implementation-Version': project.version
+        ])
     }
 }
 
-tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar).configure {
+tasks.named('shadowJar', ShadowJar).configure {
     archiveClassifier = 'fatjar'
     manifest {
-        attributes('Main-Class': 'net.minecraftforge.jarsplitter.ConsoleTool')
-        attributes('Implementation-Version': project.version)
+        attributes([
+            'Main-Class': 'net.minecraftforge.jarsplitter.ConsoleTool',
+            'Implementation-Version': project.version
+        ])
     }
 }
 
@@ -46,11 +60,6 @@ artifacts {
     archives jar
     archives shadowJar
     archives sourcesJar
-}
-
-dependencies {
-    implementation 'net.sf.jopt-simple:jopt-simple:5.0.4'
-    implementation 'net.minecraftforge:srgutils:0.4.3'
 }
 
 publishing {
@@ -62,31 +71,17 @@ publishing {
             name = 'Jar Splitter'
             description = 'Splits a jar file into classes and data, used in the Forge installer'
             url = 'https://github.com/MinecraftForge/JarSplitter'
-            scm {
-                url = 'https://github.com/MinecraftForge/JarSplitter'
-                connection = 'scm:git:git://github.com/MinecraftForge/JarSplitter.git'
-                developerConnection = 'scm:git:git@github.com:MinecraftForge/JarSplitter.git'
-            }
-            issueManagement {
-                system = 'github'
-                url = 'https://github.com/MinecraftForge/JarSplitter/issues'
-            }
 
-            licenses {
-                license {
-                    name = 'LGPLv2.1'
-                    url = 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
-                }
-            }
+            PomUtils.setGitHubDetails(pom, 'JarSplitter')
+
+            license PomUtils.Licenses.LGPLv2_1
 
             developers {
-                developer {
-                    id = 'LexManos'
-                    name = 'Lex Manos'
-                }
+                developer PomUtils.Developers.LexManos
             }
         }
     }
+
     repositories {
         maven gradleutils.getPublishingForgeMaven()
     }
