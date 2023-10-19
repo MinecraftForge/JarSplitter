@@ -2,12 +2,12 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import net.minecraftforge.gradleutils.PomUtils
 
 plugins {
-  id 'java'
-  id 'eclipse'
-  id 'maven-publish'
-  id 'org.cadixdev.licenser' version '0.6.1'
-  id 'com.github.johnrengelman.shadow' version '8.1.1'
-  id 'net.minecraftforge.gradleutils' version '2.+'
+    id 'java'
+    id 'eclipse'
+    id 'maven-publish'
+    id 'org.cadixdev.licenser' version '0.6.1'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'net.minecraftforge.gradleutils' version '2.+'
 }
 
 group = 'net.minecraftforge'
