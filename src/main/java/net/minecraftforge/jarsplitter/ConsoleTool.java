@@ -94,6 +94,11 @@ public class ConsoleTool {
                  ZipOutputStream zslim = new ZipOutputStream(slim == null ? NULL_OUTPUT : new FileOutputStream(slim));
                  ZipOutputStream zdata = new ZipOutputStream(data == null ? NULL_OUTPUT : new FileOutputStream(data));
                  ZipOutputStream zextra = new ZipOutputStream(extra == null ? NULL_OUTPUT : new FileOutputStream(extra))) {
+                // Explicitly set compression level because of potential differences based on environment.
+                // See https://github.com/MinecraftForge/JarSplitter/pull/2
+                zslim.setLevel(6);
+                zdata.setLevel(6);
+                zextra.setLevel(6);
 
                ZipEntry entry;
                while ((entry = zinput.getNextEntry()) != null) {

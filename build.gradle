@@ -1,17 +1,16 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import net.minecraftforge.gradleutils.PomUtils
 
 plugins {
     id 'java'
     id 'eclipse'
     id 'maven-publish'
-    id 'org.cadixdev.licenser' version '0.6.1'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
-    id 'net.minecraftforge.gradleutils' version '2.+'
+    id 'net.minecraftforge.licenser' version '1.0.1'
+    id 'net.minecraftforge.gradleutils' version '[2.3,2.4)'
 }
 
 group = 'net.minecraftforge'
-version = gradleutils.getTagOffsetVersion()
+version = gradleutils.tagOffsetVersion
 println "Version: $version"
 
 java {
@@ -71,17 +70,17 @@ publishing {
             description = 'Splits a jar file into classes and data, used in the Forge installer'
             url = 'https://github.com/MinecraftForge/JarSplitter'
 
-            PomUtils.setGitHubDetails(pom, 'JarSplitter')
+            gradleutils.pom.setGitHubDetails(pom, 'JarSplitter')
 
-            license PomUtils.Licenses.LGPLv2_1
+            license gradleutils.pom.Licenses.LGPLv2_1
 
             developers {
-                developer PomUtils.Developers.LexManos
+                developer gradleutils.pom.Developers.LexManos
             }
         }
     }
 
     repositories {
-        maven gradleutils.getPublishingForgeMaven()
+        maven gradleutils.publishingForgeMaven
     }
 }
